@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+type Panic struct {
+	message string
+}
+
+func (p Panic) Error() string {
+	return p.message
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -25,28 +33,28 @@ func main() {
 		if err != nil {
 			fmt.Println("Error:", err)
 		} else {
-			fmt.Printf("Результат: %d\n", result)
+			fmt.Printf("Результат: %v\n", result)
 		}
 	}
 }
 
-func calculate(input string) (int, error) {
+func calculate(input string) (interface{}, error) {
 	parts := strings.Split(input, " ") // Разделяем введенную строку на составляющие части
 
 	if len(parts) != 3 {
-		return 0, fmt.Errorf("Паника!!!😱😱😱 неправильный ввод") // Возвращаем ошибку, если введенный пример некорректен
+		return nil, Panic{"Паника!!!😱😱😱 неправильный ввод"} // Возвращаем ошибку, если введенный пример некорректен
 	}
 
 	a, err := convertToNumber(parts[0]) // Преобразуем первую часть примера в число
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	op := parts[1] // Получаем оператор
 
 	b, err := convertToNumber(parts[2]) // Преобразуем вторую часть примера в число
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var result int // Инициализируем результат переменной типа int
@@ -60,14 +68,18 @@ func calculate(input string) (int, error) {
 		result = a * b
 	case "/":
 		if b == 0 {
-			return 0, fmt.Errorf("Паника!!!😱😱😱 деление на ноль") // Возвращаем ошибку при попытке деления на ноль
+			return nil, Panic{"Паника!!!😱😱😱 деление на ноль"} // Возвращаем ошибку при попытке деления на ноль
 		} // Возвращаем ошибку при делении на 0
 		result = a / b
 	default:
-		return 0, fmt.Errorf("Паника!!!😱😱😱 недопустимая операция") // Возвращаем ошибку при недопустимой операции
+		return nil, Panic{"Паника!!!😱😱😱 недопустимая операция"} // Возвращаем ошибку при недопустимой операции
 	}
 
-	return result, nil // Возвращаем результат вычисления
+	if isRoman(parts[0]) && isRoman(parts[2]) { // Проверяем, являются ли оба числа римскими
+		return convertToRoman(result), nil // Возвращаем результат вычисления в римском формате
+	}
+
+	return result, nil // Возвращаем результат вычисления в виде арабского числа
 }
 
 func convertToNumber(input string) (int, error) {
@@ -92,5 +104,54 @@ func convertToNumber(input string) (int, error) {
 		return a, nil
 	}
 
-	return 0, fmt.Errorf("Паника!!!😱😱😱 неправильный ввод: %s", input)
+	return 0, Panic{"Паника!!!😱😱😱 неправильный ввод: " + input}
+}
+
+func isRoman(input string) bool {
+	arabicToRoman := map[string]int{ // Создаем map для преобразования римских чисел в арабские
+		"I":    1,
+		"II":   2,
+		"III":  3,
+		"IV":   4,
+		"V":    5,
+		"VI":   6,
+		"VII":  7,
+		"VIII": 8,
+		"IX":   9,
+		"X":    10,
+	}
+
+	_, ok := arabicToRoman[input]
+	return ok
+}
+
+func convertToRoman(input int) string {
+	romanNumerals := []struct {
+		Value  int
+		Symbol string
+	}{
+		{1000, "M"},
+		{900, "CM"},
+		{500, "D"},
+		{400, "CD"},
+		{100, "C"},
+		{90, "XC"},
+		{50, "L"},
+		{40, "XL"},
+		{10, "X"},
+		{9, "IX"},
+		{5, "V"},
+		{4, "IV"},
+		{1, "I"},
+	}
+
+	result := ""
+	for _, numeral := range romanNumerals {
+		for input >= numeral.Value {
+			result += numeral.Symbol
+			input -= numeral.Value
+		}
+	}
+
+	return result
 }
